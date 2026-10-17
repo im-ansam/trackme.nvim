@@ -97,3 +97,7 @@ Filetypes are saved under VS Code's language names where they differ
 Daily keys are `MM/DD/YYYY`, monthly keys are `YYYY-Mon` (e.g. `2026-Oct`).
 Files are re-read and updated under a lock before every write, so several
 Neovim instances can write to them at once.
+
+## License
+
+MIT

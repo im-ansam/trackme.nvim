@@ -1,0 +1,92 @@
+*trackme.txt*  Count the lines of code you type by hand
+
+==============================================================================
+CONTENTS                                                    *trackme-contents*
+
+  1. Introduction ............................... |trackme-introduction|
+  2. Setup ...................................... |trackme-setup|
+  3. Commands ................................... |trackme-commands|
+  4. What counts ................................ |trackme-counting|
+  5. Data files ................................. |trackme-data|
+
+==============================================================================
+1. INTRODUCTION                                         *trackme-introduction*
+
+trackme.nvim counts the lines you type by hand, per language, per day and
+per month. Pasted, generated and repeated text doesn't count, and a line is
+only ever counted once. The data is stored in the same format as the TrackMe
+VS Code extension.
+
+Requires Neovim 0.11 or later.
+
+==============================================================================
+2. SETUP                                                       *trackme-setup*
+
+With lazy.nvim: >lua
+    { "im-ansam/trackme.nvim", lazy = false, opts = {} }
+<
+Or call setup yourself: >lua
+    require("trackme").setup({
+      -- Daily and monthly counts (base64-encoded JSON)
+      data_dir = vim.fn.stdpath("data") .. "/trackme",
+      -- Fingerprints (SHA-256) of counted lines per file
+      history_file = vim.fn.stdpath("state") .. "/trackme/history.json",
+      -- How often pending counts are written (ms)
+      flush_interval = 60 * 1000,
+      -- Filetypes that are never tracked
+      exclude_filetypes = { "gitcommit", "gitrebase", "help", "lazy",
+        "mason", "neo-tree", "TelescopePrompt", "toggleterm" },
+      -- Extra filetype -> language name mappings
+      languages = {},
+    })
+<
+==============================================================================
+3. COMMANDS                                                 *trackme-commands*
+
+                                                                    *:TrackMe*
+:TrackMe [show]         Show today, this week and this month by language.
+                        In the window, `y` copies the summary to the
+                        clipboard and `q` closes it.
+
+:TrackMe flush          Write pending counts to disk now. This also happens
+                        every `flush_interval` and when Neovim exits.
+
+:TrackMe debug          Toggle gutter signs: `+` on counted lines, `~` on the
+                        line being typed.
+
+==============================================================================
+4. WHAT COUNTS                                              *trackme-counting*
+
+A line counts once, when it has at least one non-whitespace character that
+you typed, and you leave the line, leave insert mode or save.
+
+Not counted: pastes (terminal paste, `p`, `P`, |i_CTRL-R|), macros, |.|
+repeats, count repeats, completion text, blank lines, undo/redo, typing on a
+line that was already counted (also after reopening the file), and special
+buffers (terminal, help, git commit, ...).
+
+Lines changed by a formatter (`x=1` -> `x = 1`) stay counted and aren't
+counted again: lines are matched by their text without whitespace.
+
+Typed keys are told apart from pasted or repeated text by timing: keystrokes
+arrive milliseconds apart, pastes and repeats microseconds apart. Keys typed
+while Neovim is frozen (e.g. a slow LSP) can look like a paste; a line only
+needs one typed character to count, so this rarely matters.
+
+==============================================================================
+5. DATA FILES                                                   *trackme-data*
+
+`daily-progress-tracker.json.b64` and `monthly-progress-tracker.json.b64` in
+`data_dir` contain base64-encoded JSON: >json
+    {
+        "10/17/2026": {
+            "lines_of_code": { "total": 42, "python": 30, "lua": 12 }
+        }
+    }
+<
+Daily keys are `MM/DD/YYYY`, monthly keys are `YYYY-Mon`. Files are re-read
+and updated under a lock before every write, so several Neovim instances can
+write to them at once. Language names follow VS Code's language ids
+(`sh` -> `shellscript`, `text` -> `plaintext`, ...).
+
+ vim:tw=78:ts=8:ft=help:norl:
